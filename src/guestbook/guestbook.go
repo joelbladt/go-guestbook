@@ -1,15 +1,18 @@
 package guestbook
 
 import (
+	"fmt"
 	"html/template"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/gomarkdown/markdown"
+	"github.com/microcosm-cc/bluemonday"
 )
 
-const guestbookFile = "guestbook.txt"
+var guestbookFile string = "guestbook.txt"
 
 type Entry struct {
 	Timestamp       string
@@ -18,10 +21,30 @@ type Entry struct {
 	Message         template.HTML
 }
 
-func SanitizeAndFormat(message string) template.HTML {
-	message = template.HTMLEscapeString(message)
-	res := markdown.ToHTML([]byte(message), nil, nil)
-	return template.HTML(res)
+func renderMarkdown(message string) template.HTML {
+	md := markdown.ToHTML([]byte(message), nil, nil)
+
+	// convert \n to <br>, but only inside <p>...</p>
+	withBreaks := addLineBreaks(string(md))
+
+	// clean HTML (XSS protection)
+	p := bluemonday.UGCPolicy()
+	safe := p.Sanitize(withBreaks)
+
+	return template.HTML(safe)
+}
+
+func addLineBreaks(input string) string {
+	// RegEx search <p>...</p> and replace \n durch <br>
+	re := regexp.MustCompile(`(?s)<p>(.*?)</p>`)
+	return re.ReplaceAllStringFunc(input, func(p string) string {
+		// extracting content
+		content := strings.TrimSuffix(strings.TrimPrefix(p, "<p>"), "</p>")
+		// replace \n to <br>
+		content = strings.ReplaceAll(content, "\n", "<br>\n")
+		// wrap it up again
+		return "<p>" + content + "</p>"
+	})
 }
 
 func Save(name string, message string) error {
@@ -34,8 +57,12 @@ func Save(name string, message string) error {
 		return nil
 	}
 
-	// concatenate string
-	var newEntry string = "[" + time.Now().Format(time.RFC3339) + "] " + name + ": " + message + "\n"
+	entry := fmt.Sprintf(
+		"---ENTRY---\n%s\n%s\n%s\n",
+		time.Now().Format(time.RFC3339),
+		name,
+		message,
+	)
 
 	// open file
 	f, err := os.OpenFile(guestbookFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -44,7 +71,7 @@ func Save(name string, message string) error {
 	}
 	defer f.Close()
 
-	_, err = f.WriteString(newEntry)
+	_, err = f.WriteString(entry)
 	return err
 }
 
@@ -55,41 +82,37 @@ func Show() ([]Entry, error) {
 		return nil, err
 	}
 
-	// split all guestbook entries
-	var lines []string = strings.Split(string(data), "\n")
+	blocks := strings.Split(string(data), "---ENTRY---")
 	var entries []Entry
 
-	for _, line := range lines {
-		// if current line is empty then skip
-		if strings.TrimSpace(line) == "" {
+	for _, block := range blocks {
+		block = strings.TrimSpace(block)
+		if block == "" {
 			continue
 		}
 
-		// split current line in different parts
-		var parts []string = strings.SplitN(line, "] ", 2)
-		if len(parts) != 2 {
+		lines := strings.SplitN(block, "\n", 3)
+		if len(lines) < 3 {
 			continue
 		}
 
-		var timestamp string = strings.TrimPrefix(parts[0], "[")
-		var rest []string = strings.SplitN(parts[1], ": ", 2)
+		timestampStr := lines[0]
+		name := lines[1]
+		message := lines[2]
 
-		// make timestamp user readable
-		parsedTime, err := time.Parse(time.RFC3339, timestamp)
+		timestamp, err := time.Parse(time.RFC3339, timestampStr)
 		if err != nil {
 			continue
 		}
-		prettyTime := parsedTime.Format(time.RFC822)
 
-		var name string = rest[0]
-		var message template.HTML = SanitizeAndFormat(rest[1])
-
-		entries = append(entries, Entry{
-			Timestamp:       timestamp,
-			TimestampPretty: prettyTime,
+		entry := Entry{
+			Timestamp:       timestampStr,
+			TimestampPretty: timestamp.Format(time.RFC822),
 			Name:            name,
-			Message:         message,
-		})
+			Message:         renderMarkdown(message),
+		}
+
+		entries = append(entries, entry)
 	}
 
 	return entries, nil
