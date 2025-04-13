@@ -27,7 +27,7 @@ func Save(name string, message string) error {
 	}
 
 	// concatenate string
-	var newEntry string = "[" + time.Now().Format(time.RFC822) + "] " + name + ": " + message + "\n"
+	var newEntry string = "[" + time.Now().Format(time.RFC3339) + "] " + name + ": " + message + "\n"
 
 	// open file
 	f, err := os.OpenFile(guestbookFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -66,13 +66,21 @@ func Show() ([]Entry, error) {
 		var timestamp string = strings.TrimPrefix(parts[0], "[")
 		var rest []string = strings.SplitN(parts[1], ": ", 2)
 
+		// make timestamp user readable
+		parsedTime, err := time.Parse(time.RFC3339, timestamp)
+		if err != nil {
+			continue
+		}
+		prettyTime := parsedTime.Format(time.RFC822)
+
 		var name string = rest[0]
 		var message template.HTML = template.HTML(rest[1])
 
 		entries = append(entries, Entry{
-			Timestamp: timestamp,
-			Name:      name,
-			Message:   message,
+			Timestamp:       timestamp,
+			TimestampPretty: prettyTime,
+			Name:            name,
+			Message:         message,
 		})
 	}
 
