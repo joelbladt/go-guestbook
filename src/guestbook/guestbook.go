@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/gomarkdown/markdown"
 )
 
 const guestbookFile = "guestbook.txt"
@@ -14,6 +16,12 @@ type Entry struct {
 	TimestampPretty string
 	Name            string
 	Message         template.HTML
+}
+
+func SanitizeAndFormat(message string) template.HTML {
+	message = template.HTMLEscapeString(message)
+	res := markdown.ToHTML([]byte(message), nil, nil)
+	return template.HTML(res)
 }
 
 func Save(name string, message string) error {
@@ -74,7 +82,7 @@ func Show() ([]Entry, error) {
 		prettyTime := parsedTime.Format(time.RFC822)
 
 		var name string = rest[0]
-		var message template.HTML = template.HTML(rest[1])
+		var message template.HTML = SanitizeAndFormat(rest[1])
 
 		entries = append(entries, Entry{
 			Timestamp:       timestamp,
