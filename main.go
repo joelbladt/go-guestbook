@@ -22,6 +22,14 @@ func main() {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
+
+		entries, err := guestbook.Show()
+		if err != nil {
+			http.Error(w, "Error during loading", http.StatusInternalServerError)
+			return
+		}
+
+		tmpl.Execute(w, entries)
 	})
 
 	log.Println("Server running at http://localhost:8080")
