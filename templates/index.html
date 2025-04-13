@@ -9,3 +9,32 @@
     <h1>Golang Guestbook</h1>
 </body>
 </html>
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Golang Guestbook</title>
+    </head>
+    <body>
+        <h1>Golang Guestbook</h1>
+        <form method="post">
+            Name: <input type="text" name="name"><br>
+            Message: <br>
+            <textarea name="message" rows="4" cols="40"></textarea><br>
+            <input type="submit" value="Eintragen">
+        </form>
+        <hr>
+        <h2>Guestbook entries:</h2>
+        {{range .}}
+            <div>
+                <strong>{{.Timestamp}} – {{.Name}}</strong><br>
+                <div>{{.Message}}</div>
+            </div>
+            <hr>
+        {{else}}
+            <p>No entries available yet.</p>
+        {{end}}
+    </body>
+</html>
