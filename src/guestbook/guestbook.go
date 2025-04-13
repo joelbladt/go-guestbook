@@ -1,12 +1,20 @@
 package guestbook
 
 import (
+	"html/template"
 	"os"
 	"strings"
 	"time"
 )
 
 const guestbookFile = "guestbook.txt"
+
+type Entry struct {
+	Timestamp       string
+	TimestampPretty string
+	Name            string
+	Message         template.HTML
+}
 
 func Save(name string, message string) error {
 	// trim spaces
@@ -32,5 +40,41 @@ func Save(name string, message string) error {
 	return err
 }
 
-func Show() {
+func Show() ([]Entry, error) {
+	// read file
+	data, err := os.ReadFile(guestbookFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// split all guestbook entries
+	var lines []string = strings.Split(string(data), "\n")
+	var entries []Entry
+
+	for _, line := range lines {
+		// if current line is empty then skip
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		// split current line in different parts
+		var parts []string = strings.SplitN(line, "] ", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		var timestamp string = strings.TrimPrefix(parts[0], "[")
+		var rest []string = strings.SplitN(parts[1], ": ", 2)
+
+		var name string = rest[0]
+		var message template.HTML = template.HTML(rest[1])
+
+		entries = append(entries, Entry{
+			Timestamp: timestamp,
+			Name:      name,
+			Message:   message,
+		})
+	}
+
+	return entries, nil
 }
