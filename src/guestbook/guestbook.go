@@ -12,7 +12,7 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
-var guestbookFile string = "guestbook.txt"
+var GuestbookFile string = "guestbook.txt"
 
 type Entry struct {
 	Timestamp       string
@@ -21,11 +21,11 @@ type Entry struct {
 	Message         template.HTML
 }
 
-func renderMarkdown(message string) template.HTML {
+func RenderMarkdown(message string) template.HTML {
 	md := markdown.ToHTML([]byte(message), nil, nil)
 
 	// convert \n to <br>, but only inside <p>...</p>
-	withBreaks := addLineBreaks(string(md))
+	withBreaks := AddLineBreaks(string(md))
 
 	// clean HTML (XSS protection)
 	p := bluemonday.UGCPolicy()
@@ -34,7 +34,7 @@ func renderMarkdown(message string) template.HTML {
 	return template.HTML(safe)
 }
 
-func addLineBreaks(input string) string {
+func AddLineBreaks(input string) string {
 	// RegEx search <p>...</p> and replace \n durch <br>
 	re := regexp.MustCompile(`(?s)<p>(.*?)</p>`)
 	return re.ReplaceAllStringFunc(input, func(p string) string {
@@ -65,7 +65,7 @@ func Save(name string, message string) error {
 	)
 
 	// open file
-	f, err := os.OpenFile(guestbookFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(GuestbookFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func Save(name string, message string) error {
 
 func Show() ([]Entry, error) {
 	// read file
-	data, err := os.ReadFile(guestbookFile)
+	data, err := os.ReadFile(GuestbookFile)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func Show() ([]Entry, error) {
 			Timestamp:       timestampStr,
 			TimestampPretty: timestamp.Format(time.RFC822),
 			Name:            name,
-			Message:         renderMarkdown(message),
+			Message:         RenderMarkdown(message),
 		}
 
 		entries = append(entries, entry)
