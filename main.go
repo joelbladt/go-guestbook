@@ -1,10 +1,11 @@
 package main
 
 import (
-	"guestbook/src/guestbook"
 	"html/template"
 	"log"
 	"net/http"
+
+	"github.com/joelbladt/go-guestbook/src/guestbook"
 )
 
 var tmpl = template.Must(template.ParseFiles("templates/index.html"))

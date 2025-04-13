@@ -1,4 +1,4 @@
-module guestbook
+module github.com/joelbladt/go-guestbook
 
 go 1.23.2
 
