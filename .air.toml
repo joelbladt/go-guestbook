@@ -1,0 +1,33 @@
+# Path to the main Go file
+main = "main.go"
+
+# Build settings
+[build]
+  cmd = "go build -o ./tmp/main"
+  bin = "tmp/main"
+  full_bin = ""
+  include_ext = ["go"]
+  exclude_dir = ["tests", "tmp"]
+  exclude_file = []
+  follow_symlink = true
+  kill_delay = "0s"
+
+# Watcher settings
+[watch]
+  directories = ["./"]
+  exclude = ["tests", "tmp", "vendor", ".git"]
+
+# Color customization for different logs
+[color]
+  main = "yellow"
+  watcher = "cyan"
+  build = "green"
+  runner = "magenta"
+
+# Logging options
+[log]
+  time = true
+
+# Optional environment variables
+# [env]
+#   VAR_NAME = "value"
