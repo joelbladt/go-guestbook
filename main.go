@@ -13,8 +13,9 @@ var tmpl = template.Must(template.ParseFiles("templates/index.html"))
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			var name string = r.FormValue("name")
-			var message string = r.FormValue("message")
+			name := r.FormValue("name")
+			message := r.FormValue("message")
+
 			err := guestbook.Save(name, message)
 			if err != nil {
 				http.Error(w, "Error during saving", http.StatusInternalServerError)
@@ -30,9 +31,18 @@ func main() {
 			return
 		}
 
-		tmpl.Execute(w, entries)
+		// Handle template execution error
+		if err := tmpl.Execute(w, entries); err != nil {
+			http.Error(w, "Error rendering template", http.StatusInternalServerError)
+			log.Printf("template execution failed: %v", err)
+		}
 	})
 
+	// Check return value of ListenAndServe
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatalf("Server failed: %v", err)
+		return
+	}
+
 	log.Println("Server running at http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
 }

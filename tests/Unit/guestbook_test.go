@@ -17,14 +17,19 @@ func setupTestFile(content string) (string, func()) {
 	if _, err := tmpfile.Write([]byte(content)); err != nil {
 		panic(err)
 	}
-	tmpfile.Close()
+	if err := tmpfile.Close(); err != nil {
+		panic(err)
+	}
 
 	// Override global guestbook file path
 	oldFile := guestbook.GuestbookFile
 	guestbook.GuestbookFile = tmpfile.Name()
 
 	cleanup := func() {
-		os.Remove(tmpfile.Name())
+		if err := os.Remove(tmpfile.Name()); err != nil {
+			// Non-fatal log in test
+			println("Warning: failed to remove temp file:", err.Error())
+		}
 		guestbook.GuestbookFile = oldFile
 	}
 

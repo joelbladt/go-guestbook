@@ -3,6 +3,7 @@ package guestbook
 import (
 	"fmt"
 	"html/template"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -69,7 +70,13 @@ func Save(name string, message string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+
+	defer func() {
+		if err := f.Close(); err != nil {
+			// Log or handle the error depending on the situation
+			log.Printf("failed to close file: %v", err)
+		}
+	}()
 
 	_, err = f.WriteString(entry)
 	return err
