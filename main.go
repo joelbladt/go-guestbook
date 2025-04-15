@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"html/template"
 	"log"
 	"net/http"
@@ -8,9 +9,16 @@ import (
 	"github.com/joelbladt/go-guestbook/src/guestbook"
 )
 
-var tmpl = template.Must(template.ParseFiles("templates/index.html"))
+//go:embed templates/index.html
+var tmplFS embed.FS
+var tmpl = template.Must(template.ParseFS(tmplFS, "templates/index.html"))
 
 func main() {
+	err := guestbook.InitFile()
+	if err != nil {
+		log.Fatalf("Failed to initialize guestbook file: %v", err)
+	}
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			name := r.FormValue("name")
@@ -27,6 +35,7 @@ func main() {
 
 		entries, err := guestbook.Show()
 		if err != nil {
+			log.Printf("Error loading entries: %v\n", err)
 			http.Error(w, "Error during loading", http.StatusInternalServerError)
 			return
 		}
@@ -34,7 +43,7 @@ func main() {
 		// Handle template execution error
 		if err := tmpl.Execute(w, entries); err != nil {
 			http.Error(w, "Error rendering template", http.StatusInternalServerError)
-			log.Printf("template execution failed: %v", err)
+			log.Printf("Error rendering template: %v", err)
 		}
 	})
 

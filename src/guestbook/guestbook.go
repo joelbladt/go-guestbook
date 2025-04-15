@@ -22,6 +22,25 @@ type Entry struct {
 	Message         template.HTML
 }
 
+func InitFile() error {
+	_, err := os.Stat(GuestbookFile)
+	if os.IsNotExist(err) {
+		// Create file if not exists
+		file, err := os.Create(GuestbookFile)
+		if err != nil {
+			return err
+		}
+
+		defer func() {
+			if err := file.Close(); err != nil {
+				// Log or handle the error depending on the situation
+				log.Printf("failed to close file: %v", err)
+			}
+		}()
+	}
+	return nil
+}
+
 func RenderMarkdown(message string) template.HTML {
 	md := markdown.ToHTML([]byte(message), nil, nil)
 
